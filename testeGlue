@@ -1,50 +1,10 @@
-import sys
-import boto3
-from awsglue.transforms import *
-from awsglue.utils import getResolvedOptions
-from pyspark.context import SparkContext
-from awsglue.context import GlueContext
-from awsglue.job import Job
-
-
-## @params: [JOB_NAME]
-args = getResolvedOptions(sys.argv, ['JOB_NAME'])
-
-sc = SparkContext()
-glueContext = GlueContext(sc)
-spark = glueContext.spark_session
-job = Job(glueContext)
-job.init(args['JOB_NAME'], args)
-
-#Parameters
-glue_db = "dynamoitens"
-glue_tbl = "teste_itens"
-
-#Read movie data to Glue dynamic frame
-dynamic_frame_read = glueContext.create_dynamic_frame.from_catalog(database = glue_db, table_name = glue_tbl)
- 
-#Convert dynamic frame to data frame to use standard pyspark functions
-dfc = dynamic_frame_read.toDF()
-
-print ("Start testing")
-dynamodb = boto3.resource('dynamodb','sa-east-1') 
-table = dynamodb.Table('teste_itens')
-
-#df1 = dfc.select(list(dfc.keys())[0]).toDF()
+def MyTransform (glueContext, dfc) -> DynamicFrameCollection:
+    from pyspark.sql.functions import concat
+    from pyspark.sql.functions import lpad
     
-for row in dfc.rdd.collect():
-   
-    table.update_item(
-        Key={
-            'id_item': row.id_item,
-            'data_item': row.data_item
-        },
-        UpdateExpression="set att_c=:a",
-        ExpressionAttributeValues={
-            ':a': row.att_a.zfill(3) + row.att_b.zfill(4)
-        }
-    )
-
-print ("End testing")
-
-job.commit()
+    df = dfc.select(list(dfc.keys())[0]).toDF()
+    
+    df2 = df.withColumn('att_c', concat(lpad(df.att_a, 12, '0'), lpad(df.att_b, 5, '0')))
+    
+    dyf = DynamicFrame.fromDF(df2, glueContext, "results")
+    return DynamicFrameCollection({"CustomTransform0": dyf}, glueContext)
