@@ -1,0 +1,46 @@
+import sys
+import boto3
+from pyspark.sql.functions import concat
+from awsglue.transforms import *
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from awsglue.context import GlueContext
+from awsglue.job import Job
+
+
+## @params: [JOB_NAME]
+args = getResolvedOptions(sys.argv, ['JOB_NAME'])
+
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args['JOB_NAME'], args)
+
+#Parameters
+glue_db = "dynamoitens"
+glue_tbl = "teste_itens"
+
+#Read movie data to Glue dynamic frame
+dynamic_frame_read = glueContext.create_dynamic_frame.from_catalog(database = glue_db, table_name = glue_tbl)
+ 
+#Convert dynamic frame to data frame to use standard pyspark functions
+dfc = dynamic_frame_read.toDF()
+
+print ("Start testing")
+dynamodb = boto3.resource('dynamodb','sa-east-1') 
+table = dynamodb.Table('teste_itens')
+
+# Output Amazon S3 temp directory
+tempDir = "s3://aws-glue-temporary-857322945140-us-east-2"
+
+dfcol = dynamic_frame_read.relationalize(glue_tbl,tempDir)
+dfcol.keys()
+
+df1 = dfcol.select(list(dfcol.keys())[0]).toDF()
+
+df2 = df.withColumn('att_c', df1.select(concat(df.att_a, "")))
+    
+print ("End testing")
+
+job.commit()
