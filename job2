@@ -44,3 +44,25 @@ df2 = df.withColumn('att_c', df1.select(concat(df.att_a, "")))
 print ("End testing")
 
 job.commit()
+
+
+
+ from pyspark.sql.functions import concat
+    df = dfc.select(list(dfc.keys())[0]).toDF()
+    
+    df2 = df.withColumn('cod_idet_ctru', df.select(concat(df.agen_ctru, df.cont_ctru, df.dac_crtu)))
+    
+
+
+#*for row in dfc.rdd.collect():
+   
+    table.update_item(
+        Key={
+            'id_item': row.id_item,
+            'data_item': row.data_item
+        },
+        UpdateExpression="set att_c=:a",
+        ExpressionAttributeValues={
+            ':a': row.att_a.zfill(3) + row.att_b.zfill(4)
+        }
+    )
