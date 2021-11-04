@@ -7,6 +7,8 @@ from pyspark.context import SparkContext
 from awsglue.context import GlueContext
 from awsglue.job import Job
 
+https://aws.amazon.com/pt/premiumsupport/knowledge-center/glue-dynamodb-etl-optimization/
+
 
 ## @params: [JOB_NAME]
 args = getResolvedOptions(sys.argv, ['JOB_NAME'])
